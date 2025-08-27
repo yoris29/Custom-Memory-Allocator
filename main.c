@@ -41,6 +41,31 @@ void merge(chunk *chk) {
 	}
 }
 
+int canSplit(chunk *chk, size_t size) {
+	if(chk->size >= size + size(chunk)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+void split(chunk *chk, size_t size) {
+	size_t originalSize = chk->size;
+	chk->size = size;
+
+	chunk *newBlock = (chunk *) ((char *) chunk+ sizeof(chunk) + size);
+	newBlock->size = originalSize - size;
+	newBlock->free = 1;
+
+	newBlock->next = chk->next;
+	if(newBlock->next) {
+		newBlock->next->prev = newBlock;
+	}
+
+	chk->next = newBlock;
+	newBlock->prev = chk;
+}
+
 chunk *firstFit(size_t size) {
 	void *heapStart = sbrk(0);
 	chunk *currentChunk = heapStart;
