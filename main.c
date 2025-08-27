@@ -41,6 +41,18 @@ void merge(chunk *chk) {
 	}
 }
 
+chunk *firstFit(size_t size) {
+	void *heapStart = sbrk(0);
+	chunk *currentChunk = heapStart;
+
+	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
+		if(currentChunk->size >= size && currentChunk->free && currentChunk != NULL) {
+			return currentChunk;
+		}
+	}
+	return;
+}
+
 void free(void *data) {
     chunk *currentChunk = getChunk(data);
     currentChunk->free = 1;
