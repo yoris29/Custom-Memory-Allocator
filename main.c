@@ -58,13 +58,22 @@ void free(void *data) {
     currentChunk->free = 1;
 }
 
-void *allocate(int val) {
-    int *brk_point = (int *) sbrk(val);
-    if(brk_point == (void *) - 1) {
-	printf("Can't allocate memory yakho :p");
+void *allocate(size_t size){
+	if(size <= 0) {
+		printf("Memory size must be bigger than 0 bytes");
+		return;
+	}
+
+	size = align(size);
+	chunk *chk = firstFit(size);
+
+	if(chk != NULL) {
+		block->free = 0; // set free flag to false when we find a chunk
+		return block->data; // return the address pointer of the chunk found
+	}
+
+	printf("Didn't find a memory chunk yakho");
 	return;
-    }
-    return brk_point;
 }
 
 int main() {
