@@ -20,8 +20,8 @@ chunk *getChunk(void *data) {
 
 int canMerge(chunk *chk) {
     chunk *next = chk->next;
-    if(next != NULL && next->free) {
-	return 1;
+    if(next != NULL && chk->free && next->free) {
+		return 1;
     }
     return 0;
 }
@@ -41,11 +41,19 @@ void merge(chunk *chk) {
 	}
 }
 
+void checkFreeChunks(void *heapStart) {
+	chunk *currentChunk = heapStart;
+	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
+		if(currentChunk->free && currentChunk->next->free) {
+			merge(currentChunk);
+		}
+	}
+}
+
 int canSplit(chunk *chk, size_t size) {
 	if(chk->size >= size + size(chunk)) {
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -72,6 +80,9 @@ chunk *firstFit(size_t size) {
 
 	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
 		if(currentChunk->size >= size && currentChunk->free && currentChunk != NULL) {
+			if(currentChunk && canSplit(currentChunk, size)) {
+				split(currentChunk, size);
+			}
 			return currentChunk;
 		}
 	}
@@ -91,6 +102,7 @@ void *allocate(size_t size){
 
 	size = align(size);
 	chunk *chk = firstFit(size);
+	checkFreeChunks(sbrk(0));
 
 	if(chk != NULL) {
 		block->free = 0; // set free flag to false when we find a chunk
