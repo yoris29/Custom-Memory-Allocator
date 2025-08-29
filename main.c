@@ -10,7 +10,7 @@ typedef struct Block {
     void *data;
 } chunk;
 
-void *heapStart = NULL;
+chunk *heapStart = NULL;
 
 void init_heap() {
 	if(heapStart == NULL) {
@@ -65,7 +65,7 @@ void split(chunk *chk, size_t size) {
 	chk->size = size;
 
 	chunk *newBlock = (chunk *) ((char *) chk + sizeof(chunk) + size);
-	newBlock->size = originalSize - size;
+	newBlock->size = originalSize - size - sizeof(chunk);
 	newBlock->free = 1;
 
 	newBlock->next = chk->next;
@@ -81,14 +81,14 @@ chunk *firstFit(size_t size) {
 	chunk *currentChunk = heapStart;
 
 	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
-		if(currentChunk->size >= size && currentChunk->free && currentChunk != NULL) {
+		if(currentChunk != NULL && currentChunk->size >= size && currentChunk->free == 1) {
 			if(currentChunk && canSplit(currentChunk, size) == 1) {
 				split(currentChunk, size);
 			}
 			return currentChunk;
 		}
 	}
-	return;
+	return NULL;
 }
 
 void deallocate(void *data) {
@@ -97,6 +97,7 @@ void deallocate(void *data) {
 }
 
 void *allocate(size_t size){
+	init_heap();
 	if(size <= 0) {
 		printf("Memory size must be bigger than 0 bytes");
 		return;
@@ -104,7 +105,7 @@ void *allocate(size_t size){
 
 	size = align(size);
 	chunk *chk = firstFit(size);
-	checkFreeChunks(sbrk(0));
+	checkFreeChunks(heapStart);
 
 	if(chk != NULL) {
 		chk->free = 0; // set free flag to false when we find a chunk
@@ -112,7 +113,7 @@ void *allocate(size_t size){
 	}
 
 	printf("nah");
-	return;
+	exit(1);
 }
 
 int main() {
