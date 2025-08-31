@@ -19,16 +19,12 @@ chunk *getChunk(void *data) {
     return (chunk *) ((char*) data  - sizeof(chunk));
 }
 
-void deallocate(void *data) {
-    chunk *currentChunk = getChunk(data);
-    currentChunk->free = 1;
-}
-
 
 void merge(chunk *chk) {
     chunk *next = chk->next;
 
 	chk->size += next->size + sizeof(chunk); 
+	chk->size = align(chk->size);
 	chk->next = next->next;
 
 	if(chk->next) {
@@ -61,6 +57,7 @@ chunk *split(chunk *chk, size_t size) {
 
 	chunk *newBlock = (chunk *) ((char *) chk + sizeof(chunk) + size);
 	newBlock->size = originalSize - size - sizeof(chunk);
+	newBlock->size = align(newBlock->size);
 	newBlock->free = 1;
 
 	newBlock->next = chk->next;
@@ -75,13 +72,18 @@ chunk *split(chunk *chk, size_t size) {
 	return chk;
 }
 
-chunk *firstFit(size_t size) {
+void *firstFit(size_t size) {
 	if(heapStart == NULL) {
 		heapStart = sbrk(size + sizeof(chunk));
+		if(heapStart == (void *)-1) {
+			printf("nah");
+			exit(1);
+		}
 		heapStart->size = size;
 		heapStart->free = 0;
 		heapStart->next = NULL;
 		heapStart->prev = NULL;
+
 
 		return (void *) (heapStart + 1);
 	}
@@ -101,6 +103,10 @@ chunk *firstFit(size_t size) {
 	}
 
 	currentChunk = sbrk(size + sizeof(chunk));
+	if(currentChunk == (void *)-1) {
+			printf("nah");
+			exit(1);
+	}
 	currentChunk->size = size;
 	currentChunk->free = 0;
 	currentChunk->next = NULL;
@@ -121,7 +127,6 @@ void *allocate(size_t size){
 
 	size = align(size);
 	void *chk = firstFit(size);
-	checkFreeChunks(heapStart);
 
 	if(chk != NULL) {
 		return chk; // return the address pointer of the chunk found
@@ -131,9 +136,31 @@ void *allocate(size_t size){
 	exit(1);
 }
 
-int main() {
-    int *breakPoint = allocate(60);
-    printf("%p", breakPoint);
 
-    return 0;
+void deallocate(void *data) {
+    chunk *currentChunk = getChunk(data);
+    currentChunk->free = 1;
+}
+
+void printHeap(void *heapStart) {
+	chunk *current = heapStart;
+
+	while(current != NULL) {
+	    printf("  Address: %p\n", (void *)current);
+	    printf("  Size: %zu\n", current->size);
+	    printf("  Free: %d\n", current->free);
+	    printf("  Prev: %p\n", (void *)current->prev);
+	    printf("  Next: %p\n", (void *)current->next);
+	    printf("----------------------\n");
+
+	    current = current->next;
+	}
+}
+
+int main() {
+	chunk *chk = allocate(1024);
+	chunk *chk1 = allocate(240);
+
+	printHeap(heapStart);
+	return 0;
 }
