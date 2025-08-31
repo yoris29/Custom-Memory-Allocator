@@ -73,8 +73,9 @@ chunk *firstFit(size_t size) {
 		heapStart->next = NULL;
 		heapStart->prev = NULL;
 
-		return heapStart;
+		return (void *) (heapStart + 1);
 	}
+	
 	chunk *currentChunk = heapStart;
 	chunk *prev = NULL;
 
@@ -83,7 +84,7 @@ chunk *firstFit(size_t size) {
 			if(currentChunk && canSplit(currentChunk, size) == 1) {
 				split(currentChunk, size);
 			}
-			return currentChunk;
+			return (void *) (currentChunk + 1);
 		}
         prev = currentChunk;
 	}
@@ -96,7 +97,7 @@ chunk *firstFit(size_t size) {
 	if(prev != NULL) {
 		prev->next = currentChunk;
 	}
-	return currentChunk;
+	return (void *) (currentChunk + 1);
 }
 
 void deallocate(void *data) {
@@ -107,7 +108,7 @@ void deallocate(void *data) {
 void *allocate(size_t size){
 	if(size <= 0) {
 		printf("Memory size must be bigger than 0 bytes");
-		return;
+		return NULL;
 	}
 
 	size = align(size);
