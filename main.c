@@ -28,7 +28,7 @@ void deallocate(void *data) {
 void merge(chunk *chk) {
     chunk *next = chk->next;
 
-	chk->size += next->size; 
+	chk->size += next->size + sizeof(chunk); 
 	chk->next = next->next;
 
 	if(chk->next) {
@@ -90,9 +90,9 @@ chunk *firstFit(size_t size) {
 	chunk *prev = NULL;
 
 	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
-		if(currentChunk != NULL && currentChunk->free == 1) {
+		if(currentChunk != NULL && currentChunk->free == 1 && currentChunk->size >= size) {
 			if(canSplit(currentChunk, size) == 1) {
-				currentChunk = split(currentChunk, size);
+				split(currentChunk, size);
 			}
 			currentChunk->free = 0;
 			return (void *) (currentChunk + 1);
