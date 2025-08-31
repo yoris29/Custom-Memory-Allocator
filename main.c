@@ -49,7 +49,7 @@ void checkFreeChunks(void *heapStart) {
 
 
 int canSplit(chunk *chk, size_t size) {
-	if(chk->size >= size) {
+	if(chk->size >= size + sizeof(chunk) + 1) {
 		return 1;
 	}
 	return 0;
@@ -94,6 +94,7 @@ chunk *firstFit(size_t size) {
 			if(canSplit(currentChunk, size) == 1) {
 				currentChunk = split(currentChunk, size);
 			}
+			currentChunk->free = 0;
 			return (void *) (currentChunk + 1);
 		}
         prev = currentChunk;
