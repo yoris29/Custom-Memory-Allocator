@@ -38,12 +38,12 @@ void merge(chunk *chk) {
 
 void checkFreeChunks(void *heapStart) {
 	chunk *currentChunk = heapStart;
-	chunk *next = NULL;
-	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
-		next = currentChunk->next;
-		if(currentChunk->free == 1 && next != NULL && next->free == 1) {
+
+	while(currentChunk != NULL && currentChunk->next != NULL) {
+		while(currentChunk->free == 1 && currentChunk->next != NULL && currentChunk->next->free == 1) {
 			merge(currentChunk);
-		}
+		} 	
+		currentChunk = currentChunk->next;
 	}
 }
 
