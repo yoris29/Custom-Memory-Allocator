@@ -55,12 +55,12 @@ int canSplit(chunk *chk, size_t size) {
 	return 0;
 }
 
-void split(chunk *chk, size_t size) {
+chunk *split(chunk *chk, size_t size) {
 	size_t originalSize = chk->size;
 	chk->size = size;
 
 	chunk *newBlock = (chunk *) ((char *) chk + sizeof(chunk) + size);
-	newBlock->size = originalSize - size;
+	newBlock->size = originalSize - size - sizeof(chunk);
 	newBlock->free = 1;
 
 	newBlock->next = chk->next;
@@ -69,6 +69,7 @@ void split(chunk *chk, size_t size) {
 	}
 
 	chk->next = newBlock;
+	chk->free = 0;
 	newBlock->prev = chk;
 
 	return chk;
