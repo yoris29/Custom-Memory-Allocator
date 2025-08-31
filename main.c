@@ -7,16 +7,9 @@ typedef struct Block {
     int free;
     struct Block *prev;
     struct Block *next;
-    void *data;
 } chunk;
 
 chunk *heapStart = NULL;
-
-void init_heap() {
-	if(heapStart == NULL) {
-		heapStart = sbrk(0);
-	}
-}
 
 size_t align(size_t size) {
     return (size + 7) & ~7;
@@ -26,15 +19,10 @@ chunk *getChunk(void *data) {
     return (chunk *) ((char*) data  - sizeof(chunk));
 }
 
-
 void merge(chunk *chk) {
     chunk *next = chk->next;
 
-    if(next == NULL || chk->free == 0) {
-		return;
-    }
-    
-	chk->size += next->size +  sizeof(chunk); 
+	chk->size += next->size; 
 	chk->next = next->next;
 
 	if(chk->next) {
@@ -54,7 +42,7 @@ void checkFreeChunks(void *heapStart) {
 }
 
 int canSplit(chunk *chk, size_t size) {
-	if(chk->size >= size + sizeof(chunk)) {
+	if(chk->size >= size) {
 		return 1;
 	}
 	return 0;
@@ -65,7 +53,7 @@ void split(chunk *chk, size_t size) {
 	chk->size = size;
 
 	chunk *newBlock = (chunk *) ((char *) chk + sizeof(chunk) + size);
-	newBlock->size = originalSize - size - sizeof(chunk);
+	newBlock->size = originalSize - size;
 	newBlock->free = 1;
 
 	newBlock->next = chk->next;
@@ -78,7 +66,17 @@ void split(chunk *chk, size_t size) {
 }
 
 chunk *firstFit(size_t size) {
+	if(heapStart == NULL) {
+		heapStart = sbrk(size + sizeof(chunk));
+		heapStart->size = size;
+		heapStart->free = 0;
+		heapStart->next = NULL;
+		heapStart->prev = NULL;
+
+		return heapStart;
+	}
 	chunk *currentChunk = heapStart;
+	chunk *prev = NULL;
 
 	for(currentChunk; currentChunk; currentChunk = currentChunk->next) {
 		if(currentChunk != NULL && currentChunk->size >= size && currentChunk->free == 1) {
@@ -87,8 +85,18 @@ chunk *firstFit(size_t size) {
 			}
 			return currentChunk;
 		}
+        prev = currentChunk;
 	}
-	return NULL;
+
+	currentChunk = sbrk(size + sizeof(chunk));
+	currentChunk->size = size;
+	currentChunk->free = 0;
+	currentChunk->next = NULL;
+	currentChunk->prev = prev;
+	if(prev != NULL) {
+		prev->next = currentChunk;
+	}
+	return currentChunk;
 }
 
 void deallocate(void *data) {
@@ -97,7 +105,6 @@ void deallocate(void *data) {
 }
 
 void *allocate(size_t size){
-	init_heap();
 	if(size <= 0) {
 		printf("Memory size must be bigger than 0 bytes");
 		return;
@@ -108,8 +115,7 @@ void *allocate(size_t size){
 	checkFreeChunks(heapStart);
 
 	if(chk != NULL) {
-		chk->free = 0; // set free flag to false when we find a chunk
-		return chk->data; // return the address pointer of the chunk found
+		return (void*) (chk + 1); // return the address pointer of the chunk found
 	}
 
 	printf("nah");
